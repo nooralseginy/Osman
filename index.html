@@ -193,15 +193,25 @@ footer{margin-top:60px;padding-block:24px 40px;color:var(--muted);font-size:13px
 
 <script>
 /* ---------- Catalogue ---------- */
+/* Seasons 1–3: official Arabic dub from ATV's Arabic channel (youtube.com/@kurulusosmanarabic),
+   numbered the way the Arabic broadcast numbers them (112 full-length episodes).
+   Seasons 4–7: no Arabic dub published there; numbered by the original Turkish episodes (key = 1000 + Turkish #). */
 const SEASONS = [
-  {n:1, start:1,   count:27, years:"2019–2020"},
-  {n:2, start:28,  count:37, years:"2020–2021"},
-  {n:3, start:65,  count:34, years:"2021–2022"},
-  {n:4, start:99,  count:32, years:"2022–2023"},
-  {n:5, start:131, count:34, years:"2023–2024"},
-  {n:6, start:165, count:30, years:"2024–2025"},
-  {n:7, start:195, count:30, years:"2025–2026", provisional:true},
+  {n:1, start:1,    count:30, years:"2019–2020", dub:true},
+  {n:2, start:31,   count:42, years:"2020–2021", dub:true},
+  {n:3, start:73,   count:40, years:"2021–2022", dub:true},
+  {n:4, start:1099, count:32, years:"2022–2023", tr:99, ext:{name:"STARZPLAY", url:"https://starzplay.com/en/series/kurulus-osman/276454951992/season-4", note:"Listed on STARZPLAY. Check the audio menu for Arabic."}},
+  {n:5, start:1131, count:34, years:"2023–2024", tr:131, ext:{name:"STARZPLAY", url:"https://starzplay.com/en/arabic/series/kurulus-osman/276454951992/season-5", note:"STARZPLAY lists Arabic audio for this season."}},
+  {n:6, start:1165, count:30, years:"2024–2025", tr:165},
+  {n:7, start:1195, count:30, years:"2025–2026", tr:195, provisional:true},
 ];
+/* [full-length video id, seconds, [[part id, seconds] x3]] for Arabic episodes 1–112 */
+const CATALOG=[["Wx3ul4fqaYg",7042,[["PBfuJm0-iNA",2375],["pXQqwCZ_7qM",2479],["UYhk3J-sIpw",2398]]],["27Crk_L5x0c",7096,[["DzG8q1MQr6Y",2445],["UDzN8ZbrQ_s",2394],["AbzcXyuuCRo",2491]]],["fPgTDxUBW0M",6994,[["s3X3r2JCpBU",2461],["NufkP49E1SE",2480],["4Ku0_YQxHlw",2483]]],["x824Y08HG3E",7034,[["c_4S_pXNVS0",2490],["QuomXQEJ6wE",2477],["yq6RoxV_wHU",2485]]],["M_03EtNpGHc",7035,[["kO6H6UDCO2g",2485],["lmQkLYQ1X7U",2484],["zuYPcbwEmLA",2487]]],["v4zW9CWQKy8",7019,[["9FDk7BHFK7o",2490],["1Rd7TtgVt9U",2466],["W61r3lEl_CQ",2475]]],["K9w6bKHN8uU",7005,[["4q7lmyHGUww",2483],["BZEMvpM-niY",2485],["yfRKvBV49Xk",2457]]],["7oPFFiUgGho",7041,[["novyZeLCQE0",2481],["UieIeEY7t4g",2488],["JmlvtS4ML_Q",2537]]],["73AsukOJm9g",7019,[["uo1qzQuKopI",2469],["3rQ1fP3skSQ",2494],["kEp9COP64HQ",2476]]],["ZabuYQQCI6E",7020,[["KSwt_lpK8YU",2506],["3xjCkZRgDOI",2478],["Z1gOlwIqgXo",2496]]],["EIIDFHTc1P4",7078,[["Zojp62qQALI",2489],["MWRdUtDBMLE",2487],["xSAidUrlXxo",2515]]],["KPk1_Tjp-hU",7007,[["MuTmR_5Uc6k",2478],["wRqTX-WPl2M",2455],["gt7sy6ghUl4",2485]]],["s9FyGPlZ5c0",7033,[["03MiDpf8UjI",2475],["U2a4TgTP7Xg",2488],["e5DHNboua3Y",2488]]],["iO99iQU1jto",7026,[["H0Xax-XYor0",2476],["feAyLNdD-ts",2485],["RH0C87Xxt3E",2485]]],["z8iez221zkQ",6996,[["CMSazYAxfqs",2486],["7n-Z0YPkiIw",2457],["lslx924DejI",2481]]],["H_W9BhnaR_8",7022,[["auOO7AvnQo8",2484],["8ejbNzh3oMA",2481],["aSJupIhFODA",2480]]],["-qltBS9bxlg",7038,[["YTuGg9z4CX0",2491],["T6pZjLuypts",2479],["gXAA5OHuBB0",2481]]],["zs0j8SnQveo",7029,[["Y2Bn2xxWCUI",2478],["DVAxHH8o_o8",2486],["YJPkboVTmIg",2487]]],["zO4yBric9iQ",7039,[["RRnfXvA33a0",2488],["5V31gXO3smg",2483],["O78C2LjNNaE",2491]]],["yVdJTBfZM68",7035,[["K3k1Jf98bG8",2488],["zGGigYqeD9Y",2484],["JP7LFpKheZA",2479]]],["aE02-P-Tu64",6977,[["dnDmRNssywc",2480],["eqqY5Sia2yk",2439],["YrS9Ho-Y9DA",2480]]],["X2QDPNcFd_w",6998,[["zCh5snwMQ9Y",2475],["2eBIk0la52E",2458],["7x0lXzoF5sg",2483]]],["HZiulsP5yc4",7013,[["kw7fIqQ0Mb4",2472],["26KpqvrTYHA",2482],["UaTfy2RFA9A",2477]]],["k_P7Uv3n9a8",6969,[["ola8uWqrmjE",2462],["5CAGVQIlGzQ",2448],["l6xJdXUgFmE",2483]]],["cWFxO53glng",7022,[["_zdbcwfNTio",2492],["cvKNLPmW6iY",2470],["ecSgoTIXDzo",2484]]],["JOi_9ul0kiI",6985,[["HmcZ0QFrBpw",2454],["P7JRkH_tITo",2477],["zAiA6eC56g0",2479]]],["aEX7JhhnFIs",6969,[["50rKN15ukrE",2471],["9ipT3slQKVA",2465],["Br-9cAyE2gM",2449]]],["fLnEs2EcGzI",6970,[["bHV8-N7Z4SY",2471],["rNBIO07WMyI",2445],["t4soedPd1oc",2491]]],["bTDjbuRdGKM",6997,[["4e5pArPnlw0",2480],["J6cFFljnR5A",2475],["uCpPb0Z7E2s",2467]]],["G7LDZTnT684",7146,[["lY0LSRY096Y",2491],["FmkA-iFrNKc",2514],["BZtJAN7KLbk",2560]]],["BSZlaXxgIoI",6850,[["xG0U6MXlO_4",2424],["oar2viRSKH0",2457],["7Nub3XOxiTw",2455]]],["agd4UE2yGVg",6936,[["09DA2dZBJWE",2463],["ONRq3QmeYlI",2457],["M9PnGNv1aYA",2482]]],["15DnvZVe_m4",6938,[["sGW6gHUYMaE",2481],["aRaiuvzg_Wo",2463],["ZV1EEzZMd_g",2466]]],["VUhxnY3hyzQ",6955,[["VizSDchXwKU",2466],["VtJco6xNClI",2501],["iZKbb3M6jpc",2491]]],["D_vP8E2yU38",6914,[["BtLHmTsyLvk",2430],["jSQHlEOpJb8",2483],["sl6Z5ul10pE",2506]]],["k8Q6GNWxgGk",6979,[["64ivoL2MIKk",2456],["605QdhDsSKU",2456],["ybeD25OdUGE",2539]]],["WQ5g9Ts7POc",6861,[["SeRF8au4l1A",2476],["_BMu-5HL5tg",2471],["HPoaob-aR10",2390]]],["f2unDganmjI",6847,[["FC6HTzQshQA",2408],["eSa0NQ-J2DU",2457],["S623tqP3zkE",2457]]],["1oDB6hDh9A4",6899,[["b1S_hXx1a5c",2447],["V-yNNEzUakU",2459],["qxujg498EjM",2467]]],["k5z5iL8OU18",6899,[["vDLByoa53kw",2454],["ukupCWzjxDs",2457],["nSvDFIrs-yA",2461]]],["52wStYnPPKY",6903,[["8KBajrpDWqY",2477],["cNoOetgCe68",2467],["TrX81HWxtLA",2490]]],["ZXnHDhXKHtc",6932,[["qcxu_AEFd38",2454],["-bUerHM4xRo",2498],["fhapS-mOdL4",2479]]],["IVWqGvkKnSc",6961,[["o0o4xZxCqRE",2469],["bWHBkY2rwVU",2484],["EGJIrfSxkH0",2486]]],["4l_sujbFU3c",6936,[["GFWP19cPDj8",2489],["NnHZ3eUp2wM",2484],["zksAqiVkxB4",2489]]],["1eumlu0REa0",6968,[["etC_uR2SIVA",2486],["z6kCdtHsqNw",2474],["2ujyiSKHAHs",2484]]],["UQd3EPT8FgU",6973,[["YF2LwfdK10k",2461],["ICe7sKm1t_Y",2486],["0m8dPOfLowU",2501]]],["wWqNfeb8yg4",6981,[["odgof-5fogE",2513],["jL12BLzxrko",2456],["_wj8OWENkQw",2458]]],["4XH0Xxzos24",6899,[["XM8bohmApQI",2486],["CRuKb5TRh0U",2465],["TI86HUyXiiU",2467]]],["lCX9MbC6NUI",6970,[["8X_VBaHOmkc",2493],["JxcBIyF1P7s",2495],["F_RNi64LPv8",2478]]],["fY_5HUqqrNc",7027,[["lBlrNyqU_Uw",2497],["n6mabTQv7fg",2488],["8lt9PhYuJt0",2528]]],["fxAy0fXWXuE",6943,[["Z97qx6LU8_Y",2473],["FRCVKEsUqG0",2485],["njgBDw0uy4M",2488]]],["2q4HHmrNULg",6984,[["aa6kiwc-hXo",2493],["ToKmN24tI-Q",2473],["5bhQxiENRAA",2494]]],["CTpAyicHF6U",6981,[["NSyU3FCVh7k",2510],["7Fb7j0oAloA",2458],["_v0L8ce3PZk",2494]]],["y-nUY_Mzed0",6867,[["FcSGv1tqwic",2465],["Z5pyCMrKRj8",2457],["XRw2qXV7UAE",2466]]],["tbVrRkPjPv4",6955,[["GwjADheABx0",2457],["NC45crYG-W4",2485],["EPJIBj8Ia2g",2477]]],["6jYK2rPtZpE",6963,[["fVYcLCVDMWg",2476],["4mV6gBD4A_o",2490],["oSj6Fsse8GY",2494]]],["Nzrr3qC6oGA",6910,[["5DbxHxvJnOo",2467],["IC63b4ALHsk",2490],["IIQX9vgzd_0",2485]]],["XWTr2Hos51w",6941,[["pxxMjPRVEsI",2479],["A0bmDEIlls4",2491],["iKjrsaarmIw",2453]]],["N1mchegheCM",6945,[["6bjGbEMJ7ns",2461],["Fz40UkzLZcg",2480],["r6HMddfcGHU",2486]]],["JMgZnxzYxs0",6980,[["_nwgeFZANoY",2476],["-j6KMYkulUs",2489],["W2Chir5RfLQ",2487]]],["EDgAogkjEHQ",6962,[["H5qbwB_wcP8",2478],["5oh0GIPUecs",2479],["UPM-UJLCiHo",2488]]],["nDAc1WREOio",6947,[["2lxmeFv9JtA",2477],["Y3FptQGWGJc",2475],["qagEgnwa9KY",2490]]],["-76XB24xLNg",6945,[["1mGSm9iPSLg",2481],["0-t42FM1rCg",2480],["M-BjPM_DhmM",2465]]],["cQ2eYdHh54k",6961,[["EUk3ZW1imwM",2475],["YIEW1c92oP0",2484],["QEgZHJ8wOKE",2486]]],["MJSQ8LXBwH4",6980,[["SNHFNE6p6fk",2485],["DseqTJDmOZk",2483],["GzxR26_amIQ",2488]]],["N5H3INPT_8Q",6993,[["b4LgG6efJH8",2483],["cZflhKMTEkE",2490],["afe33EBLVQc",2489]]],["RI-KqUzuMMs",6975,[["87Po57gKEuY",2483],["WXfPqNabyYA",2486],["B7LYDrVCo9I",2407]]],["xZvNxqbDxFo",6978,[["AP40ZYgRsqw",2389],["pqRgbjyXmSg",2380],["teeRJaoX_4w",2363]]],["2EKkdmBoHA8",6931,[["Z7NlYPbIZB0",2348],["cIFC4raf7EU",2358],["eYzeOBzWCZg",2391]]],["wdc5hRiCAW8",6976,[["wbg-13clr-w",2390],["wqzBBr6WF7c",2397],["07MXN63gZ6U",2377]]],["-j6-5cJmrew",7217,[["XSiaqg9HdL0",2399],["CoikgUa5ZlI",2492],["geUZAjdnjQ8",2476]]],["ZaS4VA3qgfY",7257,[["cU1YxJdLT9Q",2485],["a0K6FbkCQXo",2500],["BM89pGXABIs",2511]]],["Et8X5AoKGmo",7250,[["rHh7pG40JRk",2494],["8a5aCp7BDGU",2539],["UO61_tnaXSo",2360]]],["uzo046QlEOM",6905,[["y0qe4TaU-c4",2359],["CWFqMHhdGEk",2329],["_A9DH7HqpIU",2336]]],["Ayj2bg4a6Yw",6900,[["yHbTVB11toY",2347],["27Wwimc3u1Y",2278],["wC_6XsOiBNw",2397]]],["CBpEl5iay0U",6926,[["g9c3UbBMGg8",2367],["Yjcl_kEUg20",2345],["iXq4HxBgKdk",2330]]],["PbVJn1RSUQc",6819,[["X0VJoQHVREc",2354],["nY193tG6mRU",2358],["u2a5jC8kkss",2227]]],["zd-PpEnCE1I",6890,[["XI8rhyN_gsk",2302],["mZxdVcNarTk",2357],["JFNCFDQ4zLg",2358]]],["QB9TPl-NSIU",6893,[["Wm8iPPpQhbQ",2360],["AFdS9hszMag",2307],["-NTEdtNGZHw",2343]]],["QSK4ITKK1W8",6951,[["VL2Yz1Q_SeU",2370],["k0cK_hCggH8",2341],["jfJp_W1AxEc",2357]]],["FStnJhdgFgw",6913,[["_GWurQ8XEZU",2354],["68iZvrDLrJM",2349],["gGKXE055smE",2330]]],["kNGFblXzWKM",6868,[["zV3WiCQnUTI",2346],["rOYy43cggeU",2357],["scKMcHKbPk8",2282]]],["xmeybiGIsn0",6878,[["T5WyieG5Otg",2352],["rB9NPXdMbEU",2294],["Voq6kS5nIM4",2351]]],["aaBy0WaJ9-U",6973,[["-008OQ2F0Rw",2355],["-yjMkNSdO0s",2355],["ESRuBwTmZr4",2380]]],["PlYt1gAaeQY",6896,[["yt6sPiaDMBc",2330],["utBSFNs1GT4",2335],["mOIkvX2IGsg",2356]]],["xgCVgAKFbi0",6922,[["MeT9DvobRp0",2355],["UUZDtRYvL34",2342],["esVWT3kJBVU",2343]]],["rDmX15eKZB0",6959,[["WbLZYD8dquU",2362],["dNIkZVLzRUo",2359],["y-zBz-bJM8c",2355]]],["KkORqioZ3rI",6951,[["inv-rA6Q5-U",2356],["o0o_nrvUlSQ",2357],["e-Snv9cKYK8",2357]]],["xICq8evhwQ0",6931,[["OllwIf3FPGU",2333],["Pt8K7BGu8PI",2355],["pN1zoA_six4",2358]]],["3pT9pQ2K2cQ",6880,[["08XOUkIqJr8",2341],["H8W6oY4ky2M",2353],["yaEk9LFtQMs",2308]]],["FV_6goS2HZE",6954,[["Mhi_oM5RkZE",2363],["Y6zLcV_b8bM",2359],["Puz2Vr7D6HI",2353]]],["ZFhzswxKzsc",6943,[["lbTecQYjOmw",2359],["7HkwgtlKN70",2352],["VfPlVfF0Qbs",2356]]],["qmWj63IpfrI",6922,[["sZp73REf7cI",2341],["PnjF7gNXuCg",2362],["Cyjes1JupfY",2353]]],["R2YRFWIxQO0",6958,[["t__6vUd0RPg",2351],["UwaR8Mjxsyk",2360],["g4Z5cXzNejo",2362]]],["28etciIWsaM",6721,[["s7C9m8xnIi8",2352],["hzlWPDEv6Rw",2212],["8YoNFCyQYeg",2312]]],["9l5_zeh0YCI",6941,[["_0jm3jJB3tA",2350],["V3NtydUb1ew",2360],["7RExZunaVQU",2354]]],["K-lOWK1ppeM",6900,[["-ux6dV-jDAE",2331],["VySVymhGX9Q",2353],["STIZw8G_x3I",2336]]],["C0WM9OJd9ag",6954,[["y1wjA8fCgUc",2360],["K9mHaepr6fg",2361],["0gI5MteAhr4",2354]]],["fyX3R1WsiCY",6955,[["e0P5Cmrz56Q",2358],["oDxeqhWsfRM",2361],["ZjfYKpfZrmU",2360]]],["bLekWBs_H80",6746,[["pe25LtB1QH8",2169],["kRWqL0lpr2w",2342],["utlgiI5eT9I",2365]]],["q10rtw5-tJc",6952,[["3GwjVCtcTtE",2333],["K9_ukB9jBjQ",2378],["GItaHYo7ytY",2363]]],["nR24pZt85iI",6895,[["aRNmiCEqy_g",2341],["mXNYghMxzxc",2331],["BQW6WmBRsqU",2344]]],["aznd3xMQ-_o",6918,[["FTyd8J8S1zY",2360],["F_YT7X7Lf54",2361],["TJVRvVk8cKA",2317]]],["yca7SKxfXxo",6946,[["o0GL3xUkvMM",2355],["zZtn39jyGa4",2351],["Y3RJFVMpNWU",2361]]],["iYxXkpRAR-k",6923,[["7dqxDi93xx8",2361],["5xPwNEwJwi8",2336],["GP1Av1HDmRM",2345]]],["fZpGho9Mlqk",6743,[["wC3-aRApxI4",2292],["DSrafsnyvxE",2238],["rIpKxgeiXRM",2340]]],["Oxi_xL-TIxk",6605,[["CP7UCT79NeI",2186],["YPpkG0q6shw",2265],["8s_zbiLdWcg",2273]]],["-onIA7L9erM",6680,[["NIk5gDIYZe0",2273],["EZTwHdAyfXs",2262],["nYqIi0QHAyE",2268]]],["o1R1Bg9zhlo",6689,[["vehN9eNpNe8",2281],["cwLVwgnFf2A",2263],["ltaqin8Orbo",2264]]],["Es1wQ5cbzDM",6689,[["g21qFAuenS8",2269],["j_7Ie36bfTM",2274],["PesCCdTiZz0",2266]]],["cjuC4jKvfs4",6675,[["AUOZY7YB7qs",2266],["TGw77gnIyTg",2270],["yDDRTafQCPg",2257]]],["WG7XUPEmlYo",9010,[["5y8aiG6NAMY",2211],["WyBmYvrobCI",2289],["rfkKYov_TUY",2276],["Y0eQzspFQ9U",2407]]]];
+const OFFICIAL = "ATV Arabic (official)";
+const builtin = ep => { const c = CATALOG[ep-1]; if (!c || ep>112) return [];
+  return [{url:"https://youtu.be/"+c[0], lang:"ar-dub", label:"Full episode · HD", builtin:true, dur:c[1]},
+          {url:"https://youtu.be/"+c[2][0][0], lang:"ar-dub", label:`${c[2].length}-part version`, builtin:true, parts:c[2]}]; };
+const thumb = (ep, q="mqdefault") => CATALOG[ep-1] && ep<=112 ? `https://i.ytimg.com/vi/${CATALOG[ep-1][0]}/${q}.jpg` : null;
 const HUES = [355, 28, 42, 190, 150, 265, 8]; // one identity colour per season
 const LANGS = {
   "ar-dub": {label:"Arabic dub", ar:"مدبلج", cls:"dub"},
@@ -217,12 +227,14 @@ try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} };
 
 const seasonCount = s => s.count + (S.extra[s.n] || 0);
-const allEps = () => SEASONS.flatMap(s => Array.from({length:seasonCount(s)}, (_,i)=>({ep:s.start+i, s:s.n, i:i+1})));
+const allEps = () => SEASONS.flatMap(s => Array.from({length:seasonCount(s)}, (_,i)=>({ep:s.start+i, s:s.n, i:i+1, tag: s.dub ? `Arabic ep ${s.start+i}` : `Turkish ep ${s.tr+i}`})));
 const findEp = ep => allEps().find(e => e.ep === +ep);
-const srcs = ep => S.sources[ep] || [];
+const userSrcs = ep => S.sources[ep] || [];
+const srcs = ep => builtin(+ep).concat(userSrcs(ep));
 const prog = ep => S.progress[ep] || null;
 const pct = ep => { const p = prog(ep); if (!p) return 0; if (p.done) return 100; return p.d ? Math.min(100, p.t / p.d * 100) : 0; };
-const dubStatus = ep => { const l = srcs(ep); if (!l.length) return "none"; return l.some(x=>x.lang==="ar-dub") ? "dub" : "sub"; };
+const seasonOf = ep => SEASONS.find(s=>+ep>=s.start && +ep<s.start+seasonCount(s));
+const dubStatus = ep => { const l = srcs(ep); if (!l.length) return seasonOf(ep)?.ext ? "ext" : "none"; return l.some(x=>x.lang==="ar-dub") ? "dub" : "sub"; };
 
 /* ---------- Artwork: generated Ottoman star pattern per episode ---------- */
 const artCache = {};
@@ -294,11 +306,11 @@ function renderHero(){
   const {e, resume} = nextUp(); const p = prog(e.ep); const n = srcs(e.ep).length;
   const st = dubStatus(e.ep);
   $("#hero").innerHTML = `
-    <img class="art" src="${art(e.ep,1280,560)}" alt="">
+    <img class="art" src="${thumb(e.ep,"maxresdefault")||art(e.ep,1280,560)}" alt="" style="object-fit:cover" onerror="this.onerror=null;this.src=art(${e.ep},1280,560)">
     <div class="copy">
       <div class="eyebrow">${resume ? "Pick up where you left off" : "Up next"}</div>
       <h1>Season ${e.s}, Episode ${e.i}</h1>
-      <p>Episode ${e.ep} overall · ${resume ? fmt(p.t)+" watched" : (n ? `${n} source${n>1?"s":""} · ${LANGS[srcs(e.ep)[0].lang]?.label||""}` : "No sources added yet")}${st==="sub"?" · no Arabic dub found":""}</p>
+      <p>${e.tag} · ${resume ? fmt(p.t)+" watched" : (n ? `${n} source${n>1?"s":""} · ${LANGS[srcs(e.ep)[0].lang]?.label||""}` : "No sources added yet")}${st==="sub"?" · no Arabic dub found":""}</p>
       <div class="row">
         <button class="cta" data-play="${e.ep}">${ICON.play}${resume?"Resume":"Play"}</button>
         <button class="cta ghost" data-open="${e.ep}">Episode details</button>
@@ -309,15 +321,16 @@ function card(e, wide){
   const p = pct(e.ep), st = dubStatus(e.ep), done = prog(e.ep)?.done;
   const b = st==="dub" ? `<span class="badge dub">Arabic dub <span class="ar">مدبلج</span></span>`
           : st==="sub" ? `<span class="badge sub">No Arabic dub</span>`
-          : `<span class="badge none">No source</span>`;
+          : st==="ext" ? `<span class="badge sub">On ${seasonOf(e.ep).ext.name}</span>`
+          : `<span class="badge none">No Arabic dub</span>`;
   return `<button class="card" data-open="${e.ep}" aria-label="Season ${e.s} episode ${e.i}">
-    <div class="thumb"><img src="${art(e.ep)}" alt="" loading="lazy">
+    <div class="thumb"><img src="${thumb(e.ep)||art(e.ep)}" alt="" loading="lazy" onerror="this.onerror=null;this.src=art(${e.ep})">
       <span class="num">${e.i}</span>${b}
       ${done?`<span class="done-tick">${ICON.check}</span>`:""}
       <span class="play">${ICON.play}</span>
       ${p>0&&!done?`<span class="prog"><i style="width:${p}%"></i></span>`:""}
     </div>
-    <div class="meta"><span><b>Episode ${e.i}</b></span><span>${wide?`S${e.s} · `:""}#${e.ep}</span></div>
+    <div class="meta"><span><b>Episode ${e.i}</b></span><span>${wide?`S${e.s} · `:""}${CATALOG[e.ep-1]&&e.ep<=112?fmt(CATALOG[e.ep-1][1]):e.tag}</span></div>
   </button>`;
 }
 function renderCont(){
@@ -336,7 +349,8 @@ function renderGrid(){
   const dub = eps.filter(e=>dubStatus(e.ep)==="dub").length;
   const missing = eps.length - dub;
   const watched = eps.filter(e=>prog(e.ep)?.done).length;
-  $("#smeta").innerHTML = `<span><b>${eps.length}</b> episodes · ${s.years}${s.provisional?" (count unconfirmed)":""}</span><span><b>${dub}</b> with Arabic dub</span><span><b>${missing}</b> missing a dub</span><span><b>${watched}</b> watched</span>`;
+  const ext = s.ext ? `<a class="chip" style="color:var(--brass);border-color:var(--brass)" href="${s.ext.url}" target="_blank" rel="noopener">Watch season ${s.n} on ${s.ext.name} ↗</a>` : "";
+  $("#smeta").innerHTML = ext + (s.dub ? `<span>Arabic dub · ${OFFICIAL}</span>` : s.ext ? `<span>${s.ext.note}</span>` : `<span>No Arabic dub found from an official source</span>`) + `<span><b>${eps.length}</b> episodes · ${s.years}${s.provisional?" (count unconfirmed)":""}</span><span><b>${dub}</b> with Arabic dub</span><span><b>${missing}</b> missing a dub</span><span><b>${watched}</b> watched</span>`;
   const f = S.filter;
   eps = eps.filter(e => f==="all" || (f==="dub"&&dubStatus(e.ep)==="dub") || (f==="missing"&&dubStatus(e.ep)!=="dub") || (f==="unwatched"&&!prog(e.ep)?.done) || (f==="progress"&&pct(e.ep)>0&&!prog(e.ep)?.done));
   $("#grid").innerHTML = eps.length ? eps.map(e=>card(e)).join("") + (s.provisional&&f==="all"?`<button class="card" data-addep="${s.n}"><div class="thumb" style="display:grid;place-items:center;color:var(--muted)">+ Add episode</div></button>`:"")
@@ -350,24 +364,25 @@ function closeSheet(){ $("#sheetHost").innerHTML=""; document.body.style.overflo
 function epSheet(ep){
   const e = findEp(ep), l = srcs(ep), p = prog(ep), st = dubStatus(ep);
   openSheet(`
-    <div class="art-head"><img src="${art(ep,1280,560)}" alt=""><button class="x" data-close aria-label="Close">${ICON.x}</button></div>
+    <div class="art-head"><img src="${thumb(ep,"maxresdefault")||art(ep,1280,560)}" alt="" onerror="this.onerror=null;this.src=art(${ep},1280,560)"><button class="x" data-close aria-label="Close">${ICON.x}</button></div>
     <div class="body">
       <h3>Season ${e.s}, Episode ${e.i}</h3>
-      <div class="sub">Episode ${ep} overall${p?.done?" · Watched":p?.t?` · ${fmt(p.t)} of ${fmt(p.d)} watched`:""}</div>
-      ${st==="sub"?`<div class="callout">No Arabic-dubbed source for this episode yet. The sources below are subtitled or in another language.</div>`:""}
+      <div class="sub">${e.tag}${ep<=112?" · "+OFFICIAL:""}${p?.done?" · Watched":p?.t?` · ${fmt(p.t)} of ${fmt(p.d)} watched`:""}</div>
+      ${st==="ext"?`<div class="callout">ATV's free Arabic channel ends at season 3. ${seasonOf(ep).ext.note} <a style="color:var(--brass)" href="${seasonOf(ep).ext.url}" target="_blank" rel="noopener">Open season ${e.s} on ${seasonOf(ep).ext.name} ↗</a></div>`
+       : st!=="dub"?`<div class="callout">No Arabic dub found for this episode. ATV's official Arabic channel ends at season 3, and no licensed Arabic dub turned up for this season. ${st==="sub"?"The sources below are subtitled or in another language.":"You can add a link below if one appears."}</div>`:""}
       <div class="row">
         <button class="cta" data-play="${ep}" ${l.length?"":"disabled style='opacity:.4'"}>${ICON.play}${p&&!p.done&&p.t>5?"Resume":"Play"}</button>
         ${p?.done?`<button class="cta ghost" data-unwatch="${ep}">Mark unwatched</button>`:`<button class="cta ghost" data-watched="${ep}">${ICON.check}Mark watched</button>`}
       </div>
       <div>
         <div class="label" style="margin-bottom:10px">Sources · tried in this order, backups play automatically</div>
-        <div class="srcs">${l.length? l.map((x,i)=>`
+        <div class="srcs">${l.length? l.map((x,i)=>{ const b=builtin(ep).length, u=i-b; return `
           <div class="src">
-            <div class="info"><b>${esc(x.label||host(x.url))}</b><span>${esc(host(x.url))} · ${kindOf(x.url)}</span></div>
+            <div class="info"><b>${esc(x.label||host(x.url))}</b><span>${x.builtin?OFFICIAL+(x.dur?" · "+fmt(x.dur):x.parts?" · "+fmt(x.parts.reduce((a,p)=>a+p[1],0)):""):esc(host(x.url))+" · "+kindOf(x.url)}</span></div>
             <span class="tag ${LANGS[x.lang]?.cls||""}">${LANGS[x.lang]?.label||"Other"}</span>
-            ${i?`<button class="mini" data-srcup="${ep}:${i}" aria-label="Make primary">${ICON.up}</button>`:""}
-            <button class="mini" data-srcdel="${ep}:${i}" aria-label="Remove source">${ICON.trash}</button>
-          </div>`).join("") : `<div class="empty">No sources yet. Add one below, or bulk-import from <b>Sources</b>.</div>`}
+            ${x.builtin?"":`${u?`<button class="mini" data-srcup="${ep}:${u}" aria-label="Move up">${ICON.up}</button>`:""}
+            <button class="mini" data-srcdel="${ep}:${u}" aria-label="Remove source">${ICON.trash}</button>`}
+          </div>`; }).join("") : `<div class="empty">No sources yet. Add one below, or bulk-import from <b>Sources</b>.</div>`}
         </div>
       </div>
       <form class="addform" id="addSrc" data-ep="${ep}">
@@ -481,10 +496,21 @@ function loadSource(){
     v.addEventListener("pause", ()=>v.duration && record(v.currentTime, v.duration));
   } else if (kind==="youtube"){
     stage.innerHTML = `<div id="yt"></div>`;
+    // Multi-part sources play as one continuous episode; progress is tracked across all parts.
+    const parts = x.parts || [[ytId(x.url), x.dur || 0]];
+    const cum = parts.reduce((a,p)=>(a.push(a[a.length-1]+p[1]),a),[0]), total = cum[cum.length-1];
+    const pr = prog(P.ep), frac = pr && !pr.done && pr.d && pr.t>5 ? pr.t/pr.d : 0;
+    let target = frac*total - 3, k = 0; while (k < parts.length-1 && target >= cum[k+1]) k++;
+    const startAt = Math.max(0, Math.floor(total ? target - cum[k] : resumeAt));
     withYT(()=>{ if (!P) return;
-      P.yt = new YT.Player("yt", {videoId: ytId(x.url), playerVars:{autoplay:1, playsinline:1, start:Math.floor(resumeAt), rel:0, hl:"ar"},
-        events:{ onError: fail, onStateChange: ev=>{ if (ev.data===0) finished(); } }});
-      P.timer = setInterval(()=>{ try{ const t=P.yt.getCurrentTime(), d=P.yt.getDuration(); if (d && P.yt.getPlayerState()===1) record(t,d); }catch(e){} }, 4000);
+      P.yt = new YT.Player("yt", {videoId: parts[k][0], playerVars:{autoplay:1, playsinline:1, start:startAt, rel:0, hl:"ar", fs:1},
+        events:{
+          onReady: ()=>{ if (parts.length>1) P.yt.loadPlaylist(parts.map(p=>p[0]), k, startAt); },
+          onError: fail,
+          onStateChange: ev=>{ if (ev.data===0){ const i = parts.length>1 ? P.yt.getPlaylistIndex() : 0; if (i>=parts.length-1) finished(); } } }});
+      P.timer = setInterval(()=>{ try{ if (P.yt.getPlayerState()!==1) return;
+        const i = parts.length>1 ? Math.max(0,P.yt.getPlaylistIndex()) : 0, t = P.yt.getCurrentTime();
+        const d = total || P.yt.getDuration(); if (d) record(cum[i]+t, d); }catch(e){} }, 4000);
     });
   } else {
     // Generic embed page: progress can't be read across sites, so we log "started" and offer Mark watched.
