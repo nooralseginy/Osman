@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Osman">
+<meta name="theme-color" content="#120d0c">
+<title>Osman Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Manrope:wght@400;500;600;700&family=Reem+Kufi:wght@500;700&display=swap">
+<link rel="apple-touch-icon" id="touchIcon">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
+<style>
+/* Layout: cinematic dark shelf. Sticky top bar, hero "up next", continue row, season rail, episode poster grid, full-screen player overlay. */
+:root{
+  --ink:#120d0c;        /* page ground, warm black */
+  --panel:#1c1514;      /* raised surfaces */
+  --line:#33292670;     /* hairlines */
+  --fg:#f3ece4;         /* primary text, parchment */
+  --muted:#a8998d;      /* secondary text */
+  --brass:#d4a64a;      /* accent, Ottoman brass */
+  --crimson:#9e2a2b;    /* kayı crimson */
+  --ok:#5fb37a; --warn:#e0a03a; --bad:#d4574e;
+  --display:"Marcellus", "Times New Roman", serif;
+  --body:"Manrope", system-ui, -apple-system, sans-serif;
+  --arabic:"Reem Kufi", "Geeza Pro", "Noto Kufi Arabic", sans-serif;
+  --r:14px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--ink);color:var(--fg);font:15px/1.5 var(--body)}
+body{padding-bottom:env(safe-area-inset-bottom,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--ink);z-index:30}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,textarea,select{font:inherit;color:var(--fg);background:var(--ink);border:1px solid #3a2f2b;border-radius:10px;padding:12px 14px;width:100%}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.wrap{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));max-width:1400px;margin:0 auto}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:linear-gradient(var(--ink) 70%,transparent);padding-block:14px 18px}
+.bar .wrap{display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0}
+.brand b{font:400 24px/1 var(--display);letter-spacing:.04em}
+.brand span{font:700 20px/1 var(--arabic);color:var(--brass)}
+.iconbtn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:var(--panel);border:1px solid #2e2522;font-weight:600;font-size:14px;min-height:44px}
+.iconbtn svg{width:18px;height:18px}
+
+/* hero */
+.hero{position:relative;border-radius:22px;overflow:hidden;min-height:300px;display:flex;align-items:flex-end;border:1px solid #2e2522}
+.hero canvas,.hero .art{position:absolute;inset:0;width:100%;height:100%}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(18,13,12,.95) 0%,rgba(18,13,12,.6) 55%,rgba(18,13,12,.1))}
+.hero .copy{position:relative;z-index:1;padding:32px;max-width:640px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+.hero h1{font:400 clamp(30px,4.4vw,52px)/1.05 var(--display);margin:8px 0 6px;text-wrap:balance}
+.hero p{color:var(--muted);margin:0 0 20px}
+.cta{display:inline-flex;align-items:center;gap:10px;background:var(--fg);color:var(--ink);padding:14px 24px;border-radius:999px;font-weight:700;font-size:16px;min-height:50px}
+.cta svg{width:18px;height:18px}
+.cta.ghost{background:rgba(243,236,228,.12);color:var(--fg)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+
+section{margin-top:34px}
+h2{font:400 22px/1.2 var(--display);margin:0 0 14px;letter-spacing:.02em}
+
+/* continue row */
+.shelf{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,300px);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+.shelf::-webkit-scrollbar{display:none}
+.shelf>*{scroll-snap-align:start}
+
+/* season rail + filters */
+.rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.rail::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:10px 18px;border-radius:999px;border:1px solid #3a2f2b;font-weight:600;font-size:14px;min-height:44px;white-space:nowrap;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--ink);border-color:var(--fg)}
+.chip small{font-weight:500;opacity:.7;margin-left:4px}
+.filters{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.filters .chip{padding:7px 14px;min-height:36px;font-size:13px}
+.season-meta{color:var(--muted);font-size:14px;margin:16px 0 14px;display:flex;gap:16px;flex-wrap:wrap}
+.season-meta b{color:var(--fg);font-weight:600}
+
+/* episode cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.card{position:relative;text-align:left;display:flex;flex-direction:column;gap:10px;border-radius:var(--r);transition:transform .2s}
+.card:active{transform:scale(.98)}
+.thumb{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;background:var(--panel);border:1px solid #2e2522;max-width:100%}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb .num{position:absolute;left:14px;bottom:10px;font:400 44px/1 var(--display);text-shadow:0 2px 16px rgba(0,0,0,.6)}
+.thumb .play{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .2s;background:rgba(0,0,0,.35)}
+.thumb .play svg{width:48px;height:48px}
+@media (hover:hover){.card:hover .play{opacity:1}}
+.prog{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.15)}
+.prog i{display:block;height:100%;background:var(--crimson)}
+.badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;letter-spacing:.04em;padding:4px 9px;border-radius:999px;background:rgba(18,13,12,.82);backdrop-filter:blur(6px);display:flex;gap:5px;align-items:center}
+.badge.dub{color:var(--ok)} .badge.sub{color:var(--warn)} .badge.none{color:var(--muted)}
+.badge .ar{font-family:var(--arabic)}
+.done-tick{position:absolute;top:10px;left:10px;width:26px;height:26px;border-radius:50%;background:var(--ok);display:grid;place-items:center}
+.done-tick svg{width:14px;height:14px;color:#0d1a12}
+.meta{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);padding-inline:2px}
+.meta b{color:var(--fg);font-weight:600;font-size:15px}
+.empty{padding:40px;text-align:center;color:var(--muted);border:1px dashed #3a2f2b;border-radius:var(--r)}
+
+/* sheet (episode detail / library) */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+@media (min-width:760px){.scrim{align-items:center}}
+.sheet{background:var(--panel);width:min(680px,100%);max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;border:1px solid #2e2522;padding:0 0 calc(24px + env(safe-area-inset-bottom,0px))}
+@media (min-width:760px){.sheet{border-radius:22px}}
+.sheet .art-head{position:relative;aspect-ratio:21/9;overflow:hidden}
+.sheet .art-head img{width:100%;height:100%;object-fit:cover;display:block}
+.sheet .art-head::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 30%,var(--panel))}
+.sheet .x{position:absolute;top:12px;right:12px;z-index:2;width:44px;height:44px;border-radius:50%;background:rgba(18,13,12,.7);display:grid;place-items:center}
+.sheet .x svg{width:20px;height:20px}
+.sheet .body{padding:0 24px;display:flex;flex-direction:column;gap:18px}
+.sheet h3{font:400 28px/1.1 var(--display);margin:-34px 0 0;position:relative;z-index:1}
+.sheet .sub{color:var(--muted);margin-top:-10px}
+.label{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.srcs{display:flex;flex-direction:column;gap:8px}
+.src{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--ink);border:1px solid #2e2522}
+.src .info{flex:1;min-width:0}
+.src .info b{display:block;font-weight:600}
+.src .info span{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:#2a211e;white-space:nowrap}
+.src .tag.dub{color:var(--ok)} .src .tag.sub{color:var(--warn)}
+.mini{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
+.mini svg{width:18px;height:18px}
+.mini:hover{background:#2a211e;color:var(--fg)}
+.addform{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.addform .full{grid-column:1/-1}
+@media (max-width:480px){.addform{grid-template-columns:1fr}}
+.btn{padding:12px 18px;border-radius:12px;background:var(--brass);color:var(--ink);font-weight:700;min-height:46px}
+.btn.quiet{background:#2a211e;color:var(--fg)}
+.note{font-size:13px;color:var(--muted);line-height:1.6}
+.note a{color:var(--brass)}
+.callout{padding:14px 16px;border-radius:12px;background:#2a1716;border:1px solid #4a2523;font-size:14px}
+
+/* player */
+.player{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column}
+.ptop{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:linear-gradient(#000,rgba(0,0,0,.4));transition:opacity .3s}
+.ptop .t{flex:1;min-width:0}
+.ptop .t b{display:block;font:400 18px/1.2 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptop .t span{font-size:12px;color:var(--muted)}
+.stage{flex:1;position:relative;min-height:0}
+.stage video,.stage iframe,.stage #yt{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.pbar{display:flex;gap:8px;align-items:center;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow-x:auto;scrollbar-width:none}
+.pbar .chip{min-height:38px;padding:7px 14px;font-size:13px}
+.upnext{position:absolute;right:20px;bottom:20px;z-index:3;background:rgba(28,21,20,.95);border:1px solid #3a2f2b;border-radius:16px;padding:16px;width:min(320px,calc(100% - 40px));display:flex;flex-direction:column;gap:10px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:90;background:var(--fg);color:var(--ink);padding:12px 20px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px)}
+.msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--muted)}
+footer{margin-top:60px;padding-block:24px 40px;color:var(--muted);font-size:13px;border-top:1px solid #2e2522}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:600px){.hero .copy{padding:22px}.grid{grid-template-columns:repeat(2,1fr);gap:12px}.thumb .num{font-size:32px}.brand span{display:none}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="brand"><b>KURULUŞ OSMAN</b><span lang="ar">المؤسس عثمان</span></div>
+    <button class="iconbtn" id="libBtn" aria-label="Manage sources">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Sources
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero" id="hero"></div>
+
+  <section id="contSec" hidden>
+    <h2>Continue watching</h2>
+    <div class="shelf" id="cont"></div>
+  </section>
+
+  <section>
+    <h2>Seasons</h2>
+    <div class="rail" id="seasons" role="tablist"></div>
+    <div class="filters" id="filters"></div>
+    <div class="season-meta" id="smeta"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <footer>
+    Your progress and links are saved on this device only. Use <b>Sources → Export</b> to back them up or move them to another device.
+  </footer>
+</main>
+
+<div id="sheetHost"></div>
+<div id="playerHost"></div>
+<div id="toastHost"></div>
+
+<script>
+/* ---------- Catalogue ---------- */
+const SEASONS = [
+  {n:1, start:1,   count:27, years:"2019–2020"},
+  {n:2, start:28,  count:37, years:"2020–2021"},
+  {n:3, start:65,  count:34, years:"2021–2022"},
+  {n:4, start:99,  count:32, years:"2022–2023"},
+  {n:5, start:131, count:34, years:"2023–2024"},
+  {n:6, start:165, count:30, years:"2024–2025"},
+  {n:7, start:195, count:30, years:"2025–2026", provisional:true},
+];
+const HUES = [355, 28, 42, 190, 150, 265, 8]; // one identity colour per season
+const LANGS = {
+  "ar-dub": {label:"Arabic dub", ar:"مدبلج", cls:"dub"},
+  "ar-sub": {label:"Arabic subtitles", ar:"مترجم", cls:"sub"},
+  "tr":     {label:"Turkish", ar:"", cls:""},
+  "other":  {label:"Other", ar:"", cls:""},
+};
+
+/* ---------- Storage ---------- */
+const KEY = "osman-player-v1";
+let S = {sources:{}, progress:{}, extra:{}, season:1, filter:"all"};
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch(e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} };
+
+const seasonCount = s => s.count + (S.extra[s.n] || 0);
+const allEps = () => SEASONS.flatMap(s => Array.from({length:seasonCount(s)}, (_,i)=>({ep:s.start+i, s:s.n, i:i+1})));
+const findEp = ep => allEps().find(e => e.ep === +ep);
+const srcs = ep => S.sources[ep] || [];
+const prog = ep => S.progress[ep] || null;
+const pct = ep => { const p = prog(ep); if (!p) return 0; if (p.done) return 100; return p.d ? Math.min(100, p.t / p.d * 100) : 0; };
+const dubStatus = ep => { const l = srcs(ep); if (!l.length) return "none"; return l.some(x=>x.lang==="ar-dub") ? "dub" : "sub"; };
+
+/* ---------- Artwork: generated Ottoman star pattern per episode ---------- */
+const artCache = {};
+function art(ep, w=640, h=360){
+  const k = ep+":"+w; if (artCache[k]) return artCache[k];
+  const e = findEp(ep) || {s:1, i:1};
+  const hue = HUES[(e.s-1) % HUES.length];
+  const c = document.createElement("canvas"); c.width=w; c.height=h;
+  const g = c.getContext("2d");
+  const grd = g.createLinearGradient(0,0,w,h);
+  grd.addColorStop(0, `hsl(${hue} 45% 18%)`);
+  grd.addColorStop(1, `hsl(${(hue+30)%360} 35% 7%)`);
+  g.fillStyle = grd; g.fillRect(0,0,w,h);
+  // khatam (8-point star) lattice
+  const size = w/7, rnd = (ep*9301+49297)%233280/233280;
+  g.lineWidth = Math.max(1, w/400);
+  for (let y=-1; y<h/size+1; y++) for (let x=-1; x<w/size+1; x++){
+    const cx = x*size + (y%2?size/2:0) + rnd*size, cy = y*size*.86;
+    const d = Math.hypot(cx-w*.8, cy-h*.3)/w;
+    g.strokeStyle = `hsla(42,70%,62%,${Math.max(.03,.35-d*.45)})`;
+    for (let r=0;r<2;r++){ g.beginPath();
+      for (let p=0;p<4;p++){ const a = p*Math.PI/2 + r*Math.PI/4, R=size*.32;
+        const px = cx+Math.cos(a)*R, py = cy+Math.sin(a)*R; p?g.lineTo(px,py):g.moveTo(px,py); }
+      g.closePath(); g.stroke(); }
+  }
+  // glow
+  const rg = g.createRadialGradient(w*.78,h*.25,0,w*.78,h*.25,w*.6);
+  rg.addColorStop(0,`hsla(${hue} 80% 60% / .28)`); rg.addColorStop(1,"transparent");
+  g.fillStyle = rg; g.fillRect(0,0,w,h);
+  // season mark
+  g.fillStyle = "hsla(40,40%,92%,.55)"; g.font = `600 ${Math.round(w/34)}px Manrope, sans-serif`;
+  g.textAlign="right"; g.fillText(`SEASON ${e.s}  ·  EP ${e.i}`, w-w/28, h-h/14);
+  return artCache[k] = c.toDataURL("image/jpeg", .82);
+}
+
+/* ---------- Helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = t => { t=Math.floor(t||0); const h=Math.floor(t/3600), m=Math.floor(t%3600/60); return h?`${h}h ${m}m`:`${m}m`; };
+const ICON = {
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  full:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+};
+function toast(msg){ const h=$("#toastHost"); h.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toast.t); toast.t=setTimeout(()=>h.innerHTML="",2600); }
+function kindOf(url){
+  if (/youtu\.?be/.test(url)) return "youtube";
+  if (/\.m3u8(\?|$)/i.test(url)) return "hls";
+  if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(url)) return "video";
+  return "embed";
+}
+function ytId(url){ const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/); return m && m[1]; }
+function host(url){ try { return new URL(url).hostname.replace(/^www\./,""); } catch(e){ return url; } }
+
+/* ---------- Home ---------- */
+function nextUp(){
+  const eps = allEps();
+  const inprog = eps.filter(e=>{const p=prog(e.ep); return p && !p.done && p.t>5;}).sort((a,b)=>prog(b.ep).at-prog(a.ep).at)[0];
+  if (inprog) return {e:inprog, resume:true};
+  const lastDone = eps.filter(e=>prog(e.ep)?.done).sort((a,b)=>prog(b.ep).at-prog(a.ep).at)[0];
+  const e = lastDone ? eps.find(x=>x.ep===lastDone.ep+1) || eps[0] : eps[0];
+  return {e, resume:false};
+}
+function renderHero(){
+  const {e, resume} = nextUp(); const p = prog(e.ep); const n = srcs(e.ep).length;
+  const st = dubStatus(e.ep);
+  $("#hero").innerHTML = `
+    <img class="art" src="${art(e.ep,1280,560)}" alt="">
+    <div class="copy">
+      <div class="eyebrow">${resume ? "Pick up where you left off" : "Up next"}</div>
+      <h1>Season ${e.s}, Episode ${e.i}</h1>
+      <p>Episode ${e.ep} overall · ${resume ? fmt(p.t)+" watched" : (n ? `${n} source${n>1?"s":""} · ${LANGS[srcs(e.ep)[0].lang]?.label||""}` : "No sources added yet")}${st==="sub"?" · no Arabic dub found":""}</p>
+      <div class="row">
+        <button class="cta" data-play="${e.ep}">${ICON.play}${resume?"Resume":"Play"}</button>
+        <button class="cta ghost" data-open="${e.ep}">Episode details</button>
+      </div>
+    </div>`;
+}
+function card(e, wide){
+  const p = pct(e.ep), st = dubStatus(e.ep), done = prog(e.ep)?.done;
+  const b = st==="dub" ? `<span class="badge dub">Arabic dub <span class="ar">مدبلج</span></span>`
+          : st==="sub" ? `<span class="badge sub">No Arabic dub</span>`
+          : `<span class="badge none">No source</span>`;
+  return `<button class="card" data-open="${e.ep}" aria-label="Season ${e.s} episode ${e.i}">
+    <div class="thumb"><img src="${art(e.ep)}" alt="" loading="lazy">
+      <span class="num">${e.i}</span>${b}
+      ${done?`<span class="done-tick">${ICON.check}</span>`:""}
+      <span class="play">${ICON.play}</span>
+      ${p>0&&!done?`<span class="prog"><i style="width:${p}%"></i></span>`:""}
+    </div>
+    <div class="meta"><span><b>Episode ${e.i}</b></span><span>${wide?`S${e.s} · `:""}#${e.ep}</span></div>
+  </button>`;
+}
+function renderCont(){
+  const list = allEps().filter(e=>{const p=prog(e.ep); return p && !p.done && p.t>5;}).sort((a,b)=>prog(b.ep).at-prog(a.ep).at).slice(0,12);
+  $("#contSec").hidden = !list.length;
+  $("#cont").innerHTML = list.map(e=>card(e,true)).join("");
+}
+function renderSeasons(){
+  $("#seasons").innerHTML = SEASONS.map(s=>`<button class="chip" role="tab" aria-pressed="${S.season===s.n}" data-season="${s.n}">Season ${s.n}<small>${s.years.slice(0,4)}</small></button>`).join("");
+  const F = [["all","All"],["dub","Arabic dub"],["missing","Missing dub"],["unwatched","Unwatched"],["progress","In progress"]];
+  $("#filters").innerHTML = F.map(([k,l])=>`<button class="chip" aria-pressed="${S.filter===k}" data-filter="${k}">${l}</button>`).join("");
+}
+function renderGrid(){
+  const s = SEASONS.find(x=>x.n===S.season);
+  let eps = allEps().filter(e=>e.s===s.n);
+  const dub = eps.filter(e=>dubStatus(e.ep)==="dub").length;
+  const missing = eps.length - dub;
+  const watched = eps.filter(e=>prog(e.ep)?.done).length;
+  $("#smeta").innerHTML = `<span><b>${eps.length}</b> episodes · ${s.years}${s.provisional?" (count unconfirmed)":""}</span><span><b>${dub}</b> with Arabic dub</span><span><b>${missing}</b> missing a dub</span><span><b>${watched}</b> watched</span>`;
+  const f = S.filter;
+  eps = eps.filter(e => f==="all" || (f==="dub"&&dubStatus(e.ep)==="dub") || (f==="missing"&&dubStatus(e.ep)!=="dub") || (f==="unwatched"&&!prog(e.ep)?.done) || (f==="progress"&&pct(e.ep)>0&&!prog(e.ep)?.done));
+  $("#grid").innerHTML = eps.length ? eps.map(e=>card(e)).join("") + (s.provisional&&f==="all"?`<button class="card" data-addep="${s.n}"><div class="thumb" style="display:grid;place-items:center;color:var(--muted)">+ Add episode</div></button>`:"")
+    : `<div class="empty" style="grid-column:1/-1">No episodes match this filter.</div>`;
+}
+function renderAll(){ renderHero(); renderCont(); renderSeasons(); renderGrid(); }
+
+/* ---------- Episode sheet ---------- */
+function openSheet(html){ $("#sheetHost").innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; document.body.style.overflow="hidden"; }
+function closeSheet(){ $("#sheetHost").innerHTML=""; document.body.style.overflow=""; }
+function epSheet(ep){
+  const e = findEp(ep), l = srcs(ep), p = prog(ep), st = dubStatus(ep);
+  openSheet(`
+    <div class="art-head"><img src="${art(ep,1280,560)}" alt=""><button class="x" data-close aria-label="Close">${ICON.x}</button></div>
+    <div class="body">
+      <h3>Season ${e.s}, Episode ${e.i}</h3>
+      <div class="sub">Episode ${ep} overall${p?.done?" · Watched":p?.t?` · ${fmt(p.t)} of ${fmt(p.d)} watched`:""}</div>
+      ${st==="sub"?`<div class="callout">No Arabic-dubbed source for this episode yet. The sources below are subtitled or in another language.</div>`:""}
+      <div class="row">
+        <button class="cta" data-play="${ep}" ${l.length?"":"disabled style='opacity:.4'"}>${ICON.play}${p&&!p.done&&p.t>5?"Resume":"Play"}</button>
+        ${p?.done?`<button class="cta ghost" data-unwatch="${ep}">Mark unwatched</button>`:`<button class="cta ghost" data-watched="${ep}">${ICON.check}Mark watched</button>`}
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:10px">Sources · tried in this order, backups play automatically</div>
+        <div class="srcs">${l.length? l.map((x,i)=>`
+          <div class="src">
+            <div class="info"><b>${esc(x.label||host(x.url))}</b><span>${esc(host(x.url))} · ${kindOf(x.url)}</span></div>
+            <span class="tag ${LANGS[x.lang]?.cls||""}">${LANGS[x.lang]?.label||"Other"}</span>
+            ${i?`<button class="mini" data-srcup="${ep}:${i}" aria-label="Make primary">${ICON.up}</button>`:""}
+            <button class="mini" data-srcdel="${ep}:${i}" aria-label="Remove source">${ICON.trash}</button>
+          </div>`).join("") : `<div class="empty">No sources yet. Add one below, or bulk-import from <b>Sources</b>.</div>`}
+        </div>
+      </div>
+      <form class="addform" id="addSrc" data-ep="${ep}">
+        <div class="label full">Add a source</div>
+        <input class="full" id="srcUrl" type="url" placeholder="Paste a video link (YouTube, .mp4, .m3u8 or embed page)" required>
+        <input id="srcLabel" placeholder="Label (optional)">
+        <select id="srcLang">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join("")}</select>
+        <button class="btn full" type="submit">Add source</button>
+      </form>
+    </div>`);
+}
+
+/* ---------- Library (bulk import/export) ---------- */
+function libSheet(){
+  const total = Object.values(S.sources).reduce((a,l)=>a+l.length,0);
+  const dubEps = allEps().filter(e=>dubStatus(e.ep)==="dub").length;
+  openSheet(`
+    <div class="body" style="padding-top:24px">
+      <div style="display:flex;align-items:center"><h3 style="margin:0;flex:1">Sources</h3><button class="mini" data-close aria-label="Close">${ICON.x}</button></div>
+      <div class="sub" style="margin-top:0">${total} links across ${Object.keys(S.sources).filter(k=>S.sources[k].length).length} episodes · ${dubEps} of ${allEps().length} episodes have an Arabic dub</div>
+      <div>
+        <div class="label" style="margin-bottom:8px">Bulk import</div>
+        <p class="note" style="margin:0 0 10px">One link per line: <code>episode, url, language, label</code>. Episode is the overall number (1–${allEps().length}) or <code>S2E5</code>. Language is <code>ar-dub</code>, <code>ar-sub</code>, <code>tr</code> or <code>other</code>. Several lines for the same episode become its backups. A JSON export from this app also works.</p>
+        <textarea id="bulk" rows="7" placeholder="S1E1, https://example.com/osman-1.m3u8, ar-dub, Server A&#10;S1E1, https://example.com/osman-1-alt.mp4, ar-dub, Server B&#10;28, https://youtu.be/XXXXXXXXXXX, ar-sub"></textarea>
+        <div class="row" style="margin-top:10px"><button class="btn" data-import>Import</button><button class="btn quiet" data-export>Copy export</button></div>
+      </div>
+      <div class="note">
+        <div class="label" style="margin-bottom:6px">Licensed Arabic dub</div>
+        The Arabic-dubbed series <span lang="ar" style="font-family:var(--arabic)">المؤسس عثمان</span> is licensed in the region to
+        <a href="https://justwatch.com/eg/tv-show/lmw-ss-thmn" target="_blank" rel="noopener">STARZPLAY</a> and is listed on
+        <a href="https://tv.apple.com/ae/show/kurulus-osman/umc.cmc.3p071hn7a3c72h0mcq63hw2lx?l=ar-AE" target="_blank" rel="noopener">Apple TV (UAE)</a>. Those apps handle their own playback and progress.
+      </div>
+      <button class="btn quiet" data-reset>Clear all progress</button>
+    </div>`);
+}
+function parseEp(tok){
+  tok = tok.trim(); const m = tok.match(/^s(\d+)\s*e(\d+)$/i);
+  if (m){ const s = SEASONS.find(x=>x.n===+m[1]); return s ? s.start + +m[2] - 1 : null; }
+  return /^\d+$/.test(tok) ? +tok : null;
+}
+function addSource(ep, url, lang="ar-dub", label=""){
+  if (!/^https?:\/\//i.test(url)) return false;
+  const l = S.sources[ep] = S.sources[ep] || [];
+  if (l.some(x=>x.url===url)) return false;
+  l.push({url, lang: LANGS[lang]?lang:"other", label});
+  // keep Arabic dub first
+  l.sort((a,b)=>(a.lang==="ar-dub"?0:1)-(b.lang==="ar-dub"?0:1));
+  return true;
+}
+function doImport(text){
+  text = text.trim(); let n = 0;
+  if (text.startsWith("{")){
+    try { const j = JSON.parse(text); for (const [ep,l] of Object.entries(j.sources||j)) for (const x of l) n += addSource(+ep, x.url, x.lang, x.label)?1:0;
+      if (j.progress) S.progress = Object.assign({}, j.progress, S.progress);
+    } catch(e){ toast("That JSON could not be read. Check it was copied in full."); return; }
+  } else for (const line of text.split(/\n/)){
+    const parts = line.split(",").map(x=>x.trim()); if (parts.length<2) continue;
+    const ep = parseEp(parts[0]); if (!ep) continue;
+    n += addSource(ep, parts[1], parts[2]||"ar-dub", parts.slice(3).join(", "))?1:0;
+  }
+  save(); renderAll(); toast(n ? `Imported ${n} link${n>1?"s":""}` : "No new links found. Check the format.");
+}
+
+/* ---------- Player ---------- */
+let P = null; // {ep, idx, el, hls, yt, timer}
+function play(ep, idx=0){
+  const l = srcs(ep);
+  if (!l.length){ epSheet(ep); toast("Add a source for this episode first"); return; }
+  closeSheet(); stopPlayer(false);
+  const e = findEp(ep);
+  P = {ep:+ep, idx};
+  $("#playerHost").innerHTML = `<div class="player" id="player">
+    <div class="ptop">
+      <button class="mini" data-pclose aria-label="Back">${ICON.back}</button>
+      <div class="t"><b>Season ${e.s} · Episode ${e.i}</b><span id="psrc"></span></div>
+      <button class="mini" data-pfull aria-label="Full screen">${ICON.full}</button>
+    </div>
+    <div class="stage" id="stage"></div>
+    <div class="pbar" id="pbar"></div>
+  </div>`;
+  document.body.style.overflow="hidden";
+  try { navigator.wakeLock?.request("screen").then(w=>P&&(P.lock=w)).catch(()=>{}); } catch(e){}
+  loadSource();
+}
+function renderPbar(){
+  const l = srcs(P.ep);
+  $("#pbar").innerHTML = l.map((x,i)=>`<button class="chip" aria-pressed="${i===P.idx}" data-psrc="${i}">${esc(x.label||host(x.url))}</button>`).join("")
+    + `<button class="chip" data-pdone>${ICON.check.replace('<svg','<svg width="14" height="14"')} Mark watched</button>`
+    + (findEp(P.ep+1)?`<button class="chip" data-pnext>Next episode →</button>`:"");
+  const x = l[P.idx]; $("#psrc").textContent = `${x.label||host(x.url)} · ${LANGS[x.lang]?.label||""} · source ${P.idx+1} of ${l.length}`;
+}
+function teardownMedia(){
+  clearInterval(P?.timer); P?.hls?.destroy(); try{ P?.yt?.destroy(); }catch(e){}
+  if (P){ P.hls=null; P.yt=null; P.el=null; }
+}
+function loadSource(){
+  teardownMedia(); renderPbar();
+  const x = srcs(P.ep)[P.idx], kind = kindOf(x.url), stage = $("#stage");
+  const resumeAt = (()=>{ const p=prog(P.ep); return p && !p.done && p.t>5 ? p.t-3 : 0; })();
+  if (kind==="video" || kind==="hls"){
+    stage.innerHTML = `<video id="vid" controls playsinline autoplay preload="auto" poster="${art(P.ep,1280,720)}"></video>`;
+    const v = $("#vid"); P.el = v;
+    if (kind==="hls" && !v.canPlayType("application/vnd.apple.mpegurl") && window.Hls?.isSupported()){
+      P.hls = new Hls(); P.hls.loadSource(x.url); P.hls.attachMedia(v);
+      P.hls.on(Hls.Events.ERROR, (_,d)=>{ if (d.fatal) fail(); });
+    } else v.src = x.url;
+    v.addEventListener("loadedmetadata", ()=>{ if (resumeAt) v.currentTime = resumeAt; }, {once:true});
+    v.addEventListener("error", fail);
+    v.addEventListener("ended", finished);
+    P.timer = setInterval(()=>{ if (!v.paused && v.duration) record(v.currentTime, v.duration); }, 4000);
+    v.addEventListener("pause", ()=>v.duration && record(v.currentTime, v.duration));
+  } else if (kind==="youtube"){
+    stage.innerHTML = `<div id="yt"></div>`;
+    withYT(()=>{ if (!P) return;
+      P.yt = new YT.Player("yt", {videoId: ytId(x.url), playerVars:{autoplay:1, playsinline:1, start:Math.floor(resumeAt), rel:0, hl:"ar"},
+        events:{ onError: fail, onStateChange: ev=>{ if (ev.data===0) finished(); } }});
+      P.timer = setInterval(()=>{ try{ const t=P.yt.getCurrentTime(), d=P.yt.getDuration(); if (d && P.yt.getPlayerState()===1) record(t,d); }catch(e){} }, 4000);
+    });
+  } else {
+    // Generic embed page: progress can't be read across sites, so we log "started" and offer Mark watched.
+    stage.innerHTML = `<iframe src="${esc(x.url)}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="no-referrer"></iframe>`;
+    const p = prog(P.ep); if (!p) { S.progress[P.ep] = {t:6, d:0, at:Date.now()}; save(); }
+    else { p.at = Date.now(); save(); }
+  }
+}
+let ytQueue = null;
+function withYT(cb){
+  if (window.YT?.Player) return cb();
+  if (!ytQueue){ ytQueue=[]; window.onYouTubeIframeAPIReady = ()=>ytQueue.splice(0).forEach(f=>f());
+    const s=document.createElement("script"); s.src="https://www.youtube.com/iframe_api"; document.head.appendChild(s); }
+  ytQueue.push(cb);
+}
+function record(t, d){
+  const p = S.progress[P.ep] = S.progress[P.ep] || {};
+  Object.assign(p, {t, d, at:Date.now()});
+  if (d && t/d > .93) p.done = true;
+  save();
+}
+function fail(){
+  if (!P) return;
+  const l = srcs(P.ep);
+  if (P.idx < l.length-1){ P.idx++; toast(`That link didn't load. Trying source ${P.idx+1} of ${l.length}.`); loadSource(); }
+  else { teardownMedia(); $("#stage").innerHTML = `<div class="msg"><div><b style="color:var(--fg);font-size:18px">None of the ${l.length} source${l.length>1?"s":""} for this episode loaded.</b><br>Close the player and add another link in Episode details.</div></div>`; }
+}
+function finished(){
+  const p = S.progress[P.ep] = S.progress[P.ep] || {}; p.done = true; p.at = Date.now(); save();
+  const nx = findEp(P.ep+1); if (!nx) return;
+  let n = 8;
+  const box = document.createElement("div"); box.className="upnext";
+  box.innerHTML = `<div class="eyebrow">Up next</div><b style="font:400 20px var(--display)">Season ${nx.s}, Episode ${nx.i}</b>
+    <div class="row"><button class="btn" data-pnext>Play now (<span id="cd">${n}</span>)</button><button class="btn quiet" data-cancelnext>Stay</button></div>`;
+  $("#stage").appendChild(box);
+  P.next = setInterval(()=>{ n--; const c=$("#cd"); if (c) c.textContent=n; if (n<=0){ clearInterval(P.next); play(P.ep+1); } }, 1000);
+}
+function stopPlayer(render=true){
+  if (!P) return;
+  try { if (P.el?.duration) record(P.el.currentTime, P.el.duration); } catch(e){}
+  clearInterval(P.next); teardownMedia(); try{ P.lock?.release(); }catch(e){}
+  P = null; $("#playerHost").innerHTML=""; document.body.style.overflow="";
+  if (render) renderAll();
+}
+function goFull(){
+  const v = P?.el, st = $("#player");
+  if (v?.webkitEnterFullscreen && !document.fullscreenEnabled) return v.webkitEnterFullscreen();
+  (st.requestFullscreen?.() || st.webkitRequestFullscreen?.())?.catch?.(()=>v?.webkitEnterFullscreen?.());
+}
+
+/* ---------- Events ---------- */
+document.addEventListener("click", ev=>{
+  const t = ev.target.closest("button,[data-close],#scrim"); if (!t) return;
+  const d = t.dataset;
+  if (t.id==="scrim" && ev.target===t) return closeSheet();
+  if (d.play) return play(+d.play);
+  if (d.open) return epSheet(+d.open);
+  if (d.season){ S.season=+d.season; save(); renderSeasons(); renderGrid(); return; }
+  if (d.filter){ S.filter=d.filter; save(); renderSeasons(); renderGrid(); return; }
+  if ("close" in d) return closeSheet();
+  if (t.id==="libBtn") return libSheet();
+  if (d.watched){ S.progress[d.watched] = Object.assign(prog(d.watched)||{t:0,d:0}, {done:true, at:Date.now()}); save(); renderAll(); return epSheet(+d.watched); }
+  if (d.unwatch){ delete S.progress[d.unwatch]; save(); renderAll(); return epSheet(+d.unwatch); }
+  if (d.srcdel){ const [ep,i]=d.srcdel.split(":").map(Number); S.sources[ep].splice(i,1); save(); renderAll(); return epSheet(ep); }
+  if (d.srcup){ const [ep,i]=d.srcup.split(":").map(Number); const l=S.sources[ep]; l.unshift(l.splice(i,1)[0]); save(); return epSheet(ep); }
+  if (d.addep){ S.extra[d.addep]=(S.extra[d.addep]||0)+1; save(); renderGrid(); return; }
+  if ("import" in d) return doImport($("#bulk").value);
+  if ("export" in d){ const txt = JSON.stringify({sources:S.sources, progress:S.progress});
+    navigator.clipboard?.writeText(txt).then(()=>toast("Copied. Paste it into Import on your other device."), ()=>{ $("#bulk").value=txt; $("#bulk").select(); toast("Selected. Copy it from the box."); });
+    if (!navigator.clipboard){ $("#bulk").value=txt; $("#bulk").select(); } return; }
+  if ("reset" in d){ if (t.dataset.armed){ S.progress={}; save(); renderAll(); closeSheet(); toast("Progress cleared"); } else { t.dataset.armed=1; t.textContent="Tap again to clear all progress"; } return; }
+  if ("pclose" in d) return stopPlayer();
+  if ("pfull" in d) return goFull();
+  if (d.psrc){ P.idx=+d.psrc; return loadSource(); }
+  if ("pdone" in d){ const p=S.progress[P.ep]=S.progress[P.ep]||{t:0,d:0}; p.done=true; p.at=Date.now(); save(); toast("Marked as watched"); return; }
+  if ("pnext" in d){ clearInterval(P.next); return play(P.ep+1); }
+  if ("cancelnext" in d){ clearInterval(P.next); t.closest(".upnext").remove(); return; }
+});
+document.addEventListener("submit", ev=>{
+  if (ev.target.id!=="addSrc") return; ev.preventDefault();
+  const ep = +ev.target.dataset.ep;
+  if (addSource(ep, $("#srcUrl").value.trim(), $("#srcLang").value, $("#srcLabel").value.trim())){ save(); renderAll(); epSheet(ep); toast("Source added"); }
+  else toast("That link is already here or isn't a full https:// address.");
+});
+document.addEventListener("keydown", ev=>{ if (ev.key==="Escape"){ if (P) stopPlayer(); else closeSheet(); } });
+window.addEventListener("pagehide", ()=>{ if (P?.el?.duration) record(P.el.currentTime, P.el.duration); });
+
+/* Home-screen icon */
+try { const c=document.createElement("canvas"); c.width=c.height=180; const g=c.getContext("2d");
+  g.fillStyle="#120d0c"; g.fillRect(0,0,180,180); g.strokeStyle="#d4a64a"; g.lineWidth=6;
+  for (let r=0;r<2;r++){ g.beginPath(); for(let p=0;p<4;p++){ const a=p*Math.PI/2+r*Math.PI/4; const x=90+Math.cos(a)*58, y=90+Math.sin(a)*58; p?g.lineTo(x,y):g.moveTo(x,y);} g.closePath(); g.stroke(); }
+  g.fillStyle="#f3ece4"; g.font="400 58px Marcellus, serif"; g.textAlign="center"; g.textBaseline="middle"; g.fillText("O",90,94);
+  $("#touchIcon").href = c.toDataURL(); } catch(e){}
+
+renderAll();
+document.fonts?.ready.then(()=>{ for (const k in artCache) delete artCache[k]; renderAll(); });
+</script>
+</body>
+</html>
